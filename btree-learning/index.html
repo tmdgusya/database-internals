@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-Tree & B-link-Tree Learning Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border: #475569;
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --glow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary-light);
+        }
+
+        .nav-logo svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--primary-light);
+        }
+
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .progress-bar {
+            width: 120px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 64px;
+            min-height: calc(100vh - 64px);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.875rem 1.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary);
+        }
+
+        /* Section Styles */
+        .section {
+            padding: 4rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+        }
+
+        /* Module Cards */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .module-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .module-card:hover::before,
+        .module-card.active::before {
+            transform: scaleX(1);
+        }
+
+        .module-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .module-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .module-card.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .module-card.locked::after {
+            content: '🔒';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .module-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .module-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .module-card p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin-bottom: 1rem;
+        }
+
+        .module-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .module-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Comparison Section */
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 900px) {
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .comparison-panel h3 {
+            padding: 1.25rem;
+            background: var(--bg-tertiary);
+            font-size: 1.125rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .comparison-panel.btree h3 {
+            border-left: 4px solid var(--primary);
+        }
+
+        .comparison-panel.blink h3 {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .tree-visualization {
+            padding: 2rem;
+            min-height: 300px;
+            position: relative;
+        }
+
+        /* Node Styles */
+        .node {
+            display: inline-flex;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .node-key {
+            padding: 0.5rem 0.875rem;
+            border-right: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .node-key:last-child {
+            border-right: none;
+        }
+
+        .node.highlight {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .node.visited {
+            border-color: var(--secondary);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .node.current {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+
+        /* Tree Structure */
+        .tree-level {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        .tree-connector {
+            position: absolute;
+            background: var(--border);
+        }
+
+        /* Animation Controls */
+        .animation-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1.25rem;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border);
+        }
+
+        .control-btn {
+            padding: 0.625rem 1.25rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Step Description */
+        .step-description {
+            padding: 1.25rem;
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 4px solid var(--primary);
+            margin: 1rem;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9375rem;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table td:first-child {
+            font-weight: 500;
+        }
+
+        .check {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .cross {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        /* Quiz Section */
+        .quiz-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .quiz-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .quiz-progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .quiz-progress h3 {
+            font-size: 1.125rem;
+        }
+
+        .question-counter {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+        }
+
+        .question {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .option {
+            padding: 1rem 1.25rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .option:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .option.selected {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .option.correct {
+            border-color: var(--secondary);
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .option.incorrect {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .option-letter {
+            width: 28px;
+            height: 28px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .feedback {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+        }
+
+        .feedback.incorrect {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h4 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+
+        /* PostgreSQL Section */
+        .postgres-section {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(16, 185, 129, 0.1));
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-top: 2rem;
+        }
+
+        .postgres-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .postgres-badge {
+            background: linear-gradient(135deg, #336791, #4f8bbd);
+            color: white;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+        }
+
+        .code-header {
+            background: var(--bg-tertiary);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .code-content {
+            padding: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9375rem;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        .code-content .keyword {
+            color: #ff7b72;
+        }
+
+        .code-content .function {
+            color: #d2a8ff;
+        }
+
+        .code-content .string {
+            color: #a5d6ff;
+        }
+
+        .code-content .comment {
+            color: #8b949e;
+        }
+
+        /* Interactive Demo */
+        .interactive-demo {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .demo-header {
+            padding: 1.25rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .demo-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .demo-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .demo-canvas {
+            padding: 2rem;
+            min-height: 400px;
+            position: relative;
+        }
+
+        /* Split Animation */
+        .split-animation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .split-phase {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .arrow {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .phase-label {
+            background: var(--bg-tertiary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.625rem 1.25rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 3rem 2rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-light);
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        /* High Key Visualization */
+        .high-key {
+            background: linear-gradient(135deg, var(--secondary), #059669);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .link-pointer {
+            stroke: var(--secondary);
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+
+        /* Lock Visualization */
+        .lock-indicator {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .section {
+                padding: 2rem 1rem;
+            }
+
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+            </svg>
+            B-Tree Academy
+        </div>
+        <ul class="nav-links">
+            <li><a href="#overview" class="active">Overview</a></li>
+            <li><a href="#comparison">Comparison</a></li>
+            <li><a href="#operations">Operations</a></li>
+            <li><a href="#quiz">Quiz</a></li>
+            <li><a href="#postgresql">PostgreSQL</a></li>
+        </ul>
+        <div class="progress-indicator">
+            <span>Progress</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="overallProgress" style="width: 0%"></div>
+            </div>
+            <span id="progressText">0%</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero" id="overview">
+            <h1>Master B-Trees & B-link-Trees</h1>
+            <p>Interactive learning platform for understanding database indexing structures, from basic B-Trees to PostgreSQL's B-link-Tree implementation.</p>
+            <div class="hero-buttons">
+                <a href="btree-basic.html" class="btn btn-primary">
+                    <span>🌳</span> Start with B-Tree Basics
+                </a>
+                <a href="blinktree-highkey.html" class="btn btn-secondary">
+                    <span>🔗</span> Explore B-link-Tree
+                </a>
+            </div>
+        </section>
+
+        <!-- Module Selection -->
+        <section class="section">
+            <div class="section-header">
+                <h2>Learning Modules</h2>
+                <p>Progress through structured lessons to master tree data structures</p>
+            </div>
+            <div class="modules-grid">
+                <div class="module-card active" onclick="location.href='btree-basic.html'">
+                    <div class="module-icon">🌳</div>
+                    <h3>1. B-Tree Fundamentals</h3>
+                    <p>Learn the core concepts of B-Trees including structure, properties, and basic operations.</p>
+                    <div class="module-meta">
+                        <span>⏱️ 30 min</span>
+                        <span>📚 Beginner</span>
+                    </div>
+                </div>
+                <div class="module-card" onclick="location.href='blinktree-highkey.html'">
+                    <div class="module-icon" style="background: linear-gradient(135deg, var(--secondary), #059669);">🔗</div>
+                    <h3>2. B-link-Tree & High Keys</h3>
+                    <p>Explore the B-link-Tree variant with high keys used in PostgreSQL for concurrent access.</p>
+                    <div class="module-meta">
+                        <span>⏱️ 45 min</span>
+                        <span>📚 Intermediate</span>
+                    </div>
+                </div>
+                <div class="module-card" onclick="scrollToSection('comparison')">
+                    <div class="module-icon" style="background: linear-gradient(135deg, var(--accent), #d97706);">⚖️</div>
+                    <h3>3. Side-by-Side Comparison</h3>
+                    <p>Compare B-Tree and B-link-Tree operations with interactive visualizations.</p>
+                    <div class="module-meta">
+                        <span>⏱️ 20 min</span>
+                        <span>📚 Review</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Section -->
+        <section class="section" id="comparison">
+            <div class="section-header">
+                <h2>B-Tree vs B-link-Tree</h2>
+                <p>Visual comparison of search and split operations between the two structures</p>
+            </div>
+
+            <div class="comparison-container">
+                <!-- B-Tree Panel -->
+                <div class="comparison-panel btree">
+                    <h3>
+                        <span>🌳</span> Standard B-Tree
+                        <span style="margin-left: auto; font-size: 0.875rem; color: var(--text-muted); font-weight: 400;">Traditional</span>
+                    </h3>
+                    <div class="tree-visualization" id="btreeViz">
+                        <div class="tree-level">
+                            <div class="node current" id="bt-root">
+                                <div class="node-key">10</div>
+                                <div class="node-key">20</div>
+                            </div>
+                        </div>
+                        <div class="tree-level">
+                            <div class="node" id="bt-left">
+                                <div class="node-key">5</div>
+                                <div class="node-key">8</div>
+                            </div>
+                            <div class="node" id="bt-mid">
+                                <div class="node-key">12</div>
+                                <div class="node-key">15</div>
+                            </div>
+                            <div class="node" id="bt-right">
+                                <div class="node-key">25</div>
+                                <div class="node-key">30</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-description" id="btreeStep">
+                        <strong>Search:</strong> Start at root node [10, 20]. For key=15: 15 > 10 and 15 < 20, so go to middle child.
+                    </div>
+                    <div class="animation-controls">
+                        <button class="control-btn" onclick="resetBtreeAnimation()">⏮️ Reset</button>
+                        <button class="control-btn" onclick="stepBtreeAnimation()">▶️ Step</button>
+                        <button class="control-btn" onclick="playBtreeAnimation()">⏵ Play</button>
+                    </div>
+                </div>
+
+                <!-- B-link-Tree Panel -->
+                <div class="comparison-panel blink">
+                    <h3>
+                        <span>🔗</span> B-link-Tree
+                        <span style="margin-left: auto; font-size: 0.875rem; color: var(--text-muted); font-weight: 400;">PostgreSQL</span>
+                    </h3>
+                    <div class="tree-visualization" id="blinkViz">
+                        <div class="tree-level">
+                            <div class="node current" id="bl-root">
+                                <div class="node-key">10</div>
+                                <div class="node-key">20</div>
+                                <span class="high-key">∞</span>
+                            </div>
+                        </div>
+                        <div class="tree-level">
+                            <div class="node" id="bl-left">
+                                <div class="node-key">5</div>
+                                <div class="node-key">8</div>
+                                <span class="high-key">10</span>
+                            </div>
+                            <div class="node" id="bl-mid">
+                                <div class="node-key">12</div>
+                                <div class="node-key">15</div>
+                                <span class="high-key">20</span>
+                            </div>
+                            <div class="node" id="bl-right">
+                                <div class="node-key">25</div>
+                                <div class="node-key">30</div>
+                                <span class="high-key">∞</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-description" id="blinkStep">
+                        <strong>Lock-Free Search:</strong> Uses high keys for lock-free traversal. If key > high key during split, follow right-link to new node.
+                    </div>
+                    <div class="animation-controls">
+                        <button class="control-btn" onclick="resetBlinkAnimation()">⏮️ Reset</button>
+                        <button class="control-btn" onclick="stepBlinkAnimation()">▶️ Step</button>
+                        <button class="control-btn" onclick="playBlinkAnimation()">⏵ Play</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>B-Tree</th>
+                        <th>B-link-Tree</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Node Structure</td>
+                        <td>Keys + Children pointers</td>
+                        <td>Keys + Children + High Key + Right-link</td>
+                    </tr>
+                    <tr>
+                        <td>Concurrent Access</td>
+                        <td><span class="cross">✗</span> Requires locks during splits</td>
+                        <td><span class="check">✓</span> Lock-free reads during splits</td>
+                    </tr>
+                    <tr>
+                        <td>Search During Split</td>
+                        <td><span class="cross">✗</span> Must wait or retry</td>
+                        <td><span class="check">✓</span> Continues via right-link</td>
+                    </tr>
+                    <tr>
+                        <td>Implementation Complexity</td>
+                        <td><span class="check">✓</span> Simpler</td>
+                        <td><span class="cross">✗</span> More complex</td>
+                    </tr>
+                    <tr>
+                        <td>Used By</td>
+                        <td>General databases</td>
+                        <td>PostgreSQL, Concurrent systems</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Operations Section -->
+        <section class="section" id="operations">
+            <div class="section-header">
+                <h2>Operation Visualization</h2>
+                <p>Step through split operations and see how each structure handles them</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('split')">Split Operation</button>
+                <button class="tab" onclick="switchTab('search')">Search Operation</button>
+                <button class="tab" onclick="switchTab('concurrent')">Concurrent Access</button>
+            </div>
+
+            <!-- Split Operation Tab -->
+            <div class="tab-content active" id="split-tab">
+                <div class="interactive-demo">
+                    <div class="demo-header">
+                        <span>Split Operation Comparison</span>
+                        <div class="demo-controls">
+                            <button class="demo-btn" onclick="showSplitPhase(0)">Before</button>
+                            <button class="demo-btn" onclick="showSplitPhase(1)">During</button>
+                            <button class="demo-btn" onclick="showSplitPhase(2)">After</button>
+                        </div>
+                    </div>
+                    <div class="demo-canvas" id="splitCanvas">
+                        <div class="split-animation">
+                            <div class="split-phase">
+                                <span class="phase-label">Overflow Node</span>
+                                <div class="node highlight">
+                                    <div class="node-key">10</div>
+                                    <div class="node-key">20</div>
+                                    <div class="node-key">30</div>
+                                </div>
+                            </div>
+                            <div class="arrow">⬇</div>
+                            <div class="split-phase">
+                                <div class="node">
+                                    <div class="node-key">10</div>
+                                </div>
+                                <span class="phase-label">Median → Parent</span>
+                                <div class="node">
+                                    <div class="node-key">30</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Operation Tab -->
+            <div class="tab-content" id="search-tab">
+                <div class="interactive-demo">
+                    <div class="demo-header">
+                        <span>Search: Looking for key 25</span>
+                        <div class="demo-controls">
+                            <button class="demo-btn" onclick="animateSearch('btree')">B-Tree Search</button>
+                            <button class="demo-btn" onclick="animateSearch('blink')">B-link Search</button>
+                        </div>
+                    </div>
+                    <div class="demo-canvas" id="searchCanvas">
+                        <div style="text-align: center; color: var(--text-muted);">
+                            Select a search type to visualize the traversal
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concurrent Access Tab -->
+            <div class="tab-content" id="concurrent-tab">
+                <div class="interactive-demo">
+                    <div class="demo-header">
+                        <span>Concurrent Read During Split</span>
+                        <div class="demo-controls">
+                            <button class="demo-btn" onclick="animateConcurrent('btree')">B-Tree (Blocking)</button>
+                            <button class="demo-btn" onclick="animateConcurrent('blink')">B-link (Non-blocking)</button>
+                        </div>
+                    </div>
+                    <div class="demo-canvas" id="concurrentCanvas">
+                        <div class="comparison-container" style="margin: 0;">
+                            <div style="text-align: center; padding: 2rem;">
+                                <h4 style="margin-bottom: 1rem; color: var(--primary-light);">B-Tree Approach</h4>
+                                <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔒</div>
+                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Writer locks node</div>
+                                    </div>
+                                    <div style="font-size: 2rem;">→</div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">⏸️</div>
+                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Readers wait</div>
+                                    </div>
+                                    <div style="font-size: 2rem;">→</div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">✓</div>
+                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Split complete</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: center; padding: 2rem;">
+                                <h4 style="margin-bottom: 1rem; color: var(--secondary);">B-link-Tree Approach</h4>
+                                <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">✏️</div>
+                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Writer splits</div>
+                                    </div>
+                                    <div style="font-size: 2rem;">→</div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">👁️</div>
+                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Readers continue</div>
+                                    </div>
+                                    <div style="font-size: 2rem;">→</div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔗</div>
+                                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Follow right-link</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quiz Section -->
+        <section class="section" id="quiz">
+            <div class="section-header">
+                <h2>Test Your Knowledge</h2>
+                <p>Interactive quiz to reinforce your understanding</p>
+            </div>
+
+            <div class="quiz-container">
+                <div class="quiz-card" id="quizCard">
+                    <div class="quiz-progress">
+                        <h3 id="quizTitle">Question 1 of 5</h3>
+                        <span class="question-counter" id="questionCounter">1/5</span>
+                    </div>
+                    <div class="question" id="questionText">
+                        What is the primary advantage of B-link-Tree over standard B-Tree?
+                    </div>
+                    <div class="options" id="optionsContainer">
+                        <div class="option" onclick="selectOption(0)">
+                            <span class="option-letter">A</span>
+                            <span>It uses less memory per node</span>
+                        </div>
+                        <div class="option" onclick="selectOption(1)">
+                            <span class="option-letter">B</span>
+                            <span>It supports lock-free concurrent reads during splits</span>
+                        </div>
+                        <div class="option" onclick="selectOption(2)">
+                            <span class="option-letter">C</span>
+                            <span>It has faster search times in single-threaded scenarios</span>
+                        </div>
+                        <div class="option" onclick="selectOption(3)">
+                            <span class="option-letter">D</span>
+                            <span>It requires less disk space for the same data</span>
+                        </div>
+                    </div>
+                    <div class="feedback" id="feedback"></div>
+                </div>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button class="btn btn-primary" onclick="nextQuestion()" id="nextBtn" style="display: none;">Next Question →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PostgreSQL Section -->
+        <section class="section" id="postgresql">
+            <div class="postgres-section">
+                <h2>
+                    Why PostgreSQL Uses B-link-Tree
+                    <span class="postgres-badge">PostgreSQL</span>
+                </h2>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔓</div>
+                        <h4>Lock-Free Reads</h4>
+                        <p>Readers don't need to acquire locks on nodes during traversal, enabling true concurrent access even during structural modifications.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon" style="background: linear-gradient(135deg, var(--secondary), #059669);">⚡</div>
+                        <h4>No Reader Starvation</h4>
+                        <p>With traditional B-Trees, heavy write workloads can starve readers. B-link-Tree ensures readers always make progress.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon" style="background: linear-gradient(135deg, var(--accent), #d97706);">🔄</div>
+                        <h4>High Concurrency</h4>
+                        <p>Multiple readers and writers can operate simultaneously without blocking each other in most scenarios.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🛡️</div>
+                        <h4>Crash Safety</h4>
+                        <p>The right-link mechanism provides a consistent view of the tree structure even during incomplete operations.</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 2.5rem; margin-bottom: 1rem;">How the Lock-Free Traversal Works</h3>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>🔍</span> B-link-Tree Search Algorithm
+                    </div>
+                    <div class="code-content">
+<span class="keyword">function</span> <span class="function">search</span>(node, key):
+    <span class="keyword">while</span> node != <span class="keyword">null</span>:
+        <span class="comment">// Search within current node</span>
+        i = <span class="function">find_position</span>(node.keys, key)
+
+        <span class="keyword">if</span> i < node.key_count <span class="keyword">and</span> node.keys[i] == key:
+            <span class="keyword">return</span> FOUND
+
+        <span class="comment">// Check if we need to follow right-link (split occurred)</span>
+        <span class="keyword">if</span> key >= node.high_key:
+            <span class="comment">// Node was split, follow right-link</span>
+            node = node.right_link
+            <span class="keyword">continue</span>
+
+        <span class="keyword">if</span> node.is_leaf:
+            <span class="keyword">return</span> NOT_FOUND
+
+        <span class="comment">// Move to appropriate child</span>
+        node = node.children[i]
+
+    <span class="keyword">return</span> NOT_FOUND</div>
+                </div>
+
+                <h3 style="margin-top: 2.5rem; margin-bottom: 1rem;">The Split Process with Right-Links</h3>
+
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">When a node splits in a B-link-Tree:</p>
+
+                <ol style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-secondary);">
+                    <li style="margin-bottom: 0.75rem;">A new right sibling node is created with half the keys</li>
+                    <li style="margin-bottom: 0.75rem;">The <strong>right-link</strong> of the original node points to the new sibling</li>
+                    <li style="margin-bottom: 0.75rem;">The <strong>high key</strong> of the original node is updated to the separator value</li>
+                    <li style="margin-bottom: 0.75rem;">Readers looking for keys ≥ high key automatically follow the right-link</li>
+                    <li>The parent node is updated with the new separator (can be deferred)</li>
+                </ol>
+
+                <div style="background: var(--bg-secondary); border-radius: 12px; padding: 1.5rem; margin-top: 2rem;">
+                    <h4 style="margin-bottom: 0.75rem; color: var(--primary-light);">💡 Key Insight</h4>
+                    <p style="color: var(--text-secondary);">The high key acts as a "fence" - if a search encounters a key larger than the high key, it knows the node has been split and follows the right-link to find the data. This allows readers to always find their target without waiting for splits to complete.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="btree-basic.html">B-Tree Basics</a>
+            <a href="blinktree-highkey.html">B-link-Tree</a>
+            <a href="#comparison">Comparison</a>
+            <a href="#quiz">Quiz</a>
+        </div>
+        <p>Interactive learning platform for B-Tree data structures. Built for database internals education.</p>
+    </footer>
+
+    <script>
+        // Progress tracking
+        let progress = 0;
+        const sections = ['overview', 'comparison', 'operations', 'quiz', 'postgresql'];
+        const visitedSections = new Set();
+
+        // Intersection Observer for tracking progress
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '-64px 0px 0px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    visitedSections.add(entry.target.id);
+                    updateProgress();
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) observer.observe(el);
+        });
+
+        function updateProgress() {
+            progress = Math.round((visitedSections.size / sections.length) * 100);
+            document.getElementById('overallProgress').style.width = progress + '%';
+            document.getElementById('progressText').textContent = progress + '%';
+        }
+
+        // Smooth scroll
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Navigation active state
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // Split animation phases
+        function showSplitPhase(phase) {
+            const canvas = document.getElementById('splitCanvas');
+            const phases = [
+                `
+                <div class="split-animation">
+                    <div class="split-phase">
+                        <span class="phase-label">Node Before Split</span>
+                        <div class="node highlight">
+                            <div class="node-key">10</div>
+                            <div class="node-key">20</div>
+                            <div class="node-key">30</div>
+                        </div>
+                    </div>
+                    <div style="color: var(--text-muted); margin: 1rem 0;">Node has 3 keys (max for order-4) - overflow!</div>
+                </div>
+                `,
+                `
+                <div class="split-animation">
+                    <div class="split-phase">
+                        <div class="node">
+                            <div class="node-key">10</div>
+                        </div>
+                        <span class="phase-label">Median (20) → Parent</span>
+                        <div class="node">
+                            <div class="node-key">30</div>
+                        </div>
+                    </div>
+                    <div style="color: var(--text-muted); margin: 1rem 0;">Keys split: left gets < median, right gets > median</div>
+                </div>
+                `,
+                `
+                <div class="split-animation">
+                    <div class="tree-level">
+                        <div class="node">
+                            <div class="node-key">20</div>
+                        </div>
+                    </div>
+                    <div class="tree-level">
+                        <div class="node">
+                            <div class="node-key">10</div>
+                        </div>
+                        <div class="node">
+                            <div class="node-key">30</div>
+                        </div>
+                    </div>
+                    <div style="color: var(--text-muted); margin: 1rem 0;">New tree structure with median promoted to parent</div>
+                </div>
+                `
+            ];
+            canvas.innerHTML = phases[phase];
+        }
+
+        // Animation functions
+        let btreeStep = 0;
+        let blinkStep = 0;
+
+        function resetBtreeAnimation() {
+            btreeStep = 0;
+            document.querySelectorAll('#btreeViz .node').forEach(n => {
+                n.classList.remove('current', 'visited', 'highlight');
+            });
+            document.getElementById('bt-root').classList.add('current');
+            document.getElementById('btreeStep').innerHTML = '<strong>Search:</strong> Start at root node [10, 20]. For key=15: 15 > 10 and 15 < 20, so go to middle child.';
+        }
+
+        function stepBtreeAnimation() {
+            const steps = [
+                { node: 'bt-root', text: '<strong>Step 1:</strong> At root [10, 20]. Key 15 is between 10 and 20, so traverse to middle child.' },
+                { node: 'bt-mid', text: '<strong>Step 2:</strong> At node [12, 15]. Key 15 found! Search complete.' }
+            ];
+
+            if (btreeStep < steps.length) {
+                document.querySelectorAll('#btreeViz .node').forEach(n => n.classList.remove('current'));
+                document.getElementById(steps[btreeStep].node).classList.add('current', 'visited');
+                document.getElementById('btreeStep').innerHTML = steps[btreeStep].text;
+                btreeStep++;
+            }
+        }
+
+        function playBtreeAnimation() {
+            resetBtreeAnimation();
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= 2) clearInterval(interval);
+                else { stepBtreeAnimation(); i++; }
+            }, 1000);
+        }
+
+        function resetBlinkAnimation() {
+            blinkStep = 0;
+            document.querySelectorAll('#blinkViz .node').forEach(n => {
+                n.classList.remove('current', 'visited', 'highlight');
+            });
+            document.getElementById('bl-root').classList.add('current');
+            document.getElementById('blinkStep').innerHTML = '<strong>Lock-Free Search:</strong> Uses high keys for lock-free traversal. If key > high key during split, follow right-link to new node.';
+        }
+
+        function stepBlinkAnimation() {
+            const steps = [
+                { node: 'bl-root', text: '<strong>Step 1:</strong> At root, check high key (∞). Key 25 < ∞, proceed to appropriate child.' },
+                { node: 'bl-right', text: '<strong>Step 2:</strong> At leaf [25, 30] with high key ∞. Key 25 found! No locks needed during traversal.' }
+            ];
+
+            if (blinkStep < steps.length) {
+                document.querySelectorAll('#blinkViz .node').forEach(n => n.classList.remove('current'));
+                document.getElementById(steps[blinkStep].node).classList.add('current', 'visited');
+                document.getElementById('blinkStep').innerHTML = steps[blinkStep].text;
+                blinkStep++;
+            }
+        }
+
+        function playBlinkAnimation() {
+            resetBlinkAnimation();
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= 2) clearInterval(interval);
+                else { stepBlinkAnimation(); i++; }
+            }, 1000);
+        }
+
+        // Quiz functionality
+        const quizData = [
+            {
+                question: "What is the primary advantage of B-link-Tree over standard B-Tree?",
+                options: [
+                    "It uses less memory per node",
+                    "It supports lock-free concurrent reads during splits",
+                    "It has faster search times in single-threaded scenarios",
+                    "It requires less disk space for the same data"
+                ],
+                correct: 1,
+                explanation: "B-link-Tree's main advantage is supporting lock-free concurrent reads during splits, which is crucial for high-concurrency databases like PostgreSQL."
+            },
+            {
+                question: "What happens when a search encounters a key larger than the current node's high key?",
+                options: [
+                    "The search fails",
+                    "The search restarts from the root",
+                    "The search follows the right-link to the next node",
+                    "The search waits for the split to complete"
+                ],
+                correct: 2,
+                explanation: "In B-link-Tree, if key ≥ high key, the search follows the right-link to the new sibling node that was created during a split."
+            },
+            {
+                question: "What is the purpose of the 'high key' in a B-link-Tree node?",
+                options: [
+                    "To store the maximum key value ever inserted",
+                    "To act as a fence - indicating when to follow the right-link",
+                    "To improve cache performance",
+                    "To indicate the node's priority"
+                ],
+                correct: 1,
+                explanation: "The high key acts as a fence. If a search looks for a key ≥ high key, it means the node was split and the search should follow the right-link."
+            },
+            {
+                question: "Which database system uses B-link-Tree for its indexing?",
+                options: [
+                    "MySQL with InnoDB",
+                    "SQLite",
+                    "MongoDB",
+                    "PostgreSQL"
+                ],
+                correct: 3,
+                explanation: "PostgreSQL uses B-link-Tree (called B-Tree in PostgreSQL, but implemented with right-links) for its standard B-Tree indexes."
+            },
+            {
+                question: "During a B-link-Tree split, when can readers be blocked?",
+                options: [
+                    "Never - readers are always lock-free",
+                    "Only when reading the root node",
+                    "Only when the tree is being created",
+                    "During parent node updates"
+                ],
+                correct: 0,
+                explanation: "In a proper B-link-Tree implementation, readers are never blocked during splits. They can always follow right-links to find their data."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let selectedOption = -1;
+        let score = 0;
+
+        function selectOption(index) {
+            if (selectedOption !== -1) return;
+
+            selectedOption = index;
+            const options = document.querySelectorAll('.option');
+            const feedback = document.getElementById('feedback');
+
+            options[index].classList.add('selected');
+
+            if (index === quizData[currentQuestion].correct) {
+                options[index].classList.add('correct');
+                feedback.className = 'feedback show correct';
+                feedback.innerHTML = '<strong>✓ Correct!</strong> ' + quizData[currentQuestion].explanation;
+                score++;
+            } else {
+                options[index].classList.add('incorrect');
+                options[quizData[currentQuestion].correct].classList.add('correct');
+                feedback.className = 'feedback show incorrect';
+                feedback.innerHTML = '<strong>✗ Incorrect.</strong> ' + quizData[currentQuestion].explanation;
+            }
+
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            selectedOption = -1;
+
+            if (currentQuestion >= quizData.length) {
+                showQuizResults();
+                return;
+            }
+
+            const q = quizData[currentQuestion];
+            document.getElementById('quizTitle').textContent = `Question ${currentQuestion + 1} of ${quizData.length}`;
+            document.getElementById('questionCounter').textContent = `${currentQuestion + 1}/${quizData.length}`;
+            document.getElementById('questionText').textContent = q.question;
+
+            const optionsHtml = q.options.map((opt, i) => `
+                <div class="option" onclick="selectOption(${i})">
+                    <span class="option-letter">${String.fromCharCode(65 + i)}</span>
+                    <span>${opt}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('optionsContainer').innerHTML = optionsHtml;
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function showQuizResults() {
+            const percentage = Math.round((score / quizData.length) * 100);
+            let message, emoji;
+
+            if (percentage === 100) { message = "Perfect score! You're a B-Tree expert!"; emoji = "🏆"; }
+            else if (percentage >= 80) { message = "Great job! You really understand B-Trees!"; emoji = "🌟"; }
+            else if (percentage >= 60) { message = "Good effort! Review the material and try again."; emoji = "📚"; }
+            else { message = "Keep learning! Check out the modules above."; emoji = "💪"; }
+
+            document.getElementById('quizCard').innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">${emoji}</div>
+                    <h3 style="font-size: 1.75rem; margin-bottom: 0.5rem;">Quiz Complete!</h3>
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--primary-light); margin: 1rem 0;">${score}/${quizData.length}</div>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">${message}</p>
+                    <button class="btn btn-primary" onclick="restartQuiz()">Try Again</button>
+                </div>
+            `;
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            selectedOption = -1;
+
+            document.getElementById('quizCard').innerHTML = `
+                <div class="quiz-progress">
+                    <h3 id="quizTitle">Question 1 of 5</h3>
+                    <span class="question-counter" id="questionCounter">1/5</span>
+                </div>
+                <div class="question" id="questionText">${quizData[0].question}</div>
+                <div class="options" id="optionsContainer">
+                    ${quizData[0].options.map((opt, i) => `
+                        <div class="option" onclick="selectOption(${i})">
+                            <span class="option-letter">${String.fromCharCode(65 + i)}</span>
+                            <span>${opt}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="feedback" id="feedback"></div>
+            `;
+        }
+
+        // Concurrent animation
+        function animateConcurrent(type) {
+            const canvas = document.getElementById('concurrentCanvas');
+
+            if (type === 'btree') {
+                canvas.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <h4 style="margin-bottom: 2rem; color: var(--primary-light);">B-Tree: Reader Blocks During Split</h4>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 3rem; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem; animation: pulse 1s infinite;">🔒</div>
+                            <div style="font-size: 0.9375rem; color: var(--text-secondary);">Writer locks node</div>
+                        </div>
+                        <div style="font-size: 2rem; color: var(--danger);">✗</div>
+                        <div style="text-align: center; opacity: 0.5;">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">👁️</div>
+                            <div style="font-size: 0.9375rem; color: var(--text-secondary);">Reader WAITING</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px; color: var(--danger);">
+                        Reader must wait for split to complete - blocking behavior
+                    </div>
+                </div>
+                `;
+            } else {
+                canvas.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <h4 style="margin-bottom: 2rem; color: var(--secondary);">B-link-Tree: Non-blocking Read</h4>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 3rem; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">✏️</div>
+                            <div style="font-size: 0.9375rem; color: var(--text-secondary);">Writer splits</div>
+                        </div>
+                        <div style="font-size: 2rem; color: var(--secondary);">✓</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">👁️</div>
+                            <div style="font-size: 0.9375rem; color: var(--text-secondary);">Reader continues</div>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔗</div>
+                            <div style="font-size: 0.9375rem; color: var(--text-secondary);">Follows right-link</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; color: var(--secondary);">
+                        Reader automatically follows right-link if needed - no blocking!
+                    </div>
+                </div>
+                `;
+            }
+        }
+
+        function animateSearch(type) {
+            const canvas = document.getElementById('searchCanvas');
+
+            canvas.innerHTML = `
+            <div style="text-align: center; padding: 1rem;">
+                <div style="margin-bottom: 1.5rem; font-size: 1.125rem; color: var(--text-secondary);">
+                    Searching for key: <strong style="color: var(--primary-light);">25</strong>
+                </div>
+                <div class="tree-level" style="margin-bottom: 1.5rem;">
+                    <div class="node ${type === 'btree' ? 'visited' : 'current'}">
+                        <div class="node-key">10</div>
+                        <div class="node-key">20</div>
+                        ${type === 'blink' ? '<span class="high-key">∞</span>' : ''}
+                    </div>
+                </div>
+                <div style="font-size: 1.5rem; margin-bottom: 1rem;">⬇</div>
+                <div class="tree-level">
+                    <div class="node" style="opacity: 0.5;">
+                        <div class="node-key">5</div>
+                        <div class="node-key">8</div>
+                        ${type === 'blink' ? '<span class="high-key">10</span>' : ''}
+                    </div>
+                    <div class="node" style="opacity: 0.5;">
+                        <div class="node-key">12</div>
+                        <div class="node-key">15</div>
+                        ${type === 'blink' ? '<span class="high-key">20</span>' : ''}
+                    </div>
+                    <div class="node current">
+                        <div class="node-key">25</div>
+                        <div class="node-key">30</div>
+                        ${type === 'blink' ? '<span class="high-key">∞</span>' : ''}
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-tertiary); border-radius: 8px;">
+                    ${type === 'btree'
+                        ? 'B-Tree: Standard traversal based on key comparisons'
+                        : 'B-link-Tree: Same traversal, but with high-key checks for concurrent splits'}
+                </div>
+            </div>
+            `;
+        }
+
+        // Initialize
+        resetBtreeAnimation();
+        resetBlinkAnimation();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-link-Tree & High Key - 데이터베이스 낙장성 입문</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #8892b0;
+            font-size: 1.2rem;
+        }
+
+        .intro {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .intro h2 {
+            color: #64ffda;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .intro p {
+            color: #ccd6f6;
+            margin-bottom: 12px;
+        }
+
+        .highlight {
+            background: rgba(100, 255, 218, 0.15);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #64ffda;
+            font-weight: 600;
+        }
+
+        .high-key-highlight {
+            background: rgba(255, 107, 107, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .panel h3 {
+            color: #fff;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .b-tree .panel-icon {
+            background: rgba(100, 255, 218, 0.2);
+        }
+
+        .blink-tree .panel-icon {
+            background: rgba(255, 107, 107, 0.2);
+        }
+
+        .node-structure {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95rem;
+            overflow-x: auto;
+        }
+
+        .node-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .pointer {
+            background: #4a5568;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            min-width: 40px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .key {
+            background: #3182ce;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .high-key {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 700;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 107, 107, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(255, 107, 107, 0.8); }
+        }
+
+        .right-pointer {
+            background: linear-gradient(135deg, #9f7aea, #805ad5);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .right-pointer::after {
+            content: '→';
+            margin-left: 8px;
+            font-size: 1.2rem;
+        }
+
+        .bracket {
+            color: #8892b0;
+            font-size: 1.5rem;
+            font-weight: 300;
+        }
+
+        .separator {
+            color: #4a5568;
+            font-weight: 300;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #a0aec0;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-box.pointer { background: #4a5568; }
+        .legend-box.key { background: #3182ce; }
+        .legend-box.high-key { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); }
+        .legend-box.right-pointer { background: linear-gradient(135deg, #9f7aea, #805ad5); }
+
+        .interactive-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .interactive-section h2 {
+            color: #64ffda;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+        }
+
+        .search-demo {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 25px 0;
+        }
+
+        .tree-visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .level {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tree-node {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .tree-node.active {
+            border-color: #64ffda;
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.3);
+        }
+
+        .tree-node.visited {
+            border-color: #805ad5;
+            background: rgba(159, 122, 234, 0.1);
+        }
+
+        .tree-node.highlighted {
+            animation: nodeHighlight 0.5s ease;
+        }
+
+        @keyframes nodeHighlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .tree-node .slot {
+            padding: 8px 12px;
+            border-radius: 6px;
+            min-width: 40px;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .tree-node .slot.pointer {
+            background: #4a5568;
+            color: #fff;
+            font-size: 0.75rem;
+        }
+
+        .tree-node .slot.key {
+            background: #3182ce;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .tree-node .slot.high-key {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .tree-node .slot.right-ptr {
+            background: linear-gradient(135deg, #9f7aea, #805ad5);
+            color: #fff;
+            position: relative;
+        }
+
+        .tree-node .slot.right-ptr::after {
+            content: '→';
+            margin-left: 4px;
+        }
+
+        .connection {
+            position: absolute;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            transform-origin: left center;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .search-input-group label {
+            color: #a0aec0;
+            font-size: 1.1rem;
+        }
+
+        .search-input-group input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #fff;
+            font-size: 1.1rem;
+            width: 120px;
+            text-align: center;
+        }
+
+        .search-input-group input:focus {
+            outline: none;
+            border-color: #64ffda;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: none;
+        }
+
+        .explanation {
+            background: rgba(100, 255, 218, 0.05);
+            border-left: 4px solid #64ffda;
+            padding: 20px 25px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+
+        .explanation h4 {
+            color: #64ffda;
+            margin-bottom: 10px;
+        }
+
+        .explanation p {
+            color: #ccd6f6;
+        }
+
+        .explanation .formula {
+            font-family: 'Consolas', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: inline-block;
+        }
+
+        .lock-free-demo {
+            background: rgba(255, 107, 107, 0.05);
+            border: 2px solid rgba(255, 107, 107, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 25px 0;
+        }
+
+        .lock-free-demo h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+
+        .thread-visualization {
+            display: flex;
+            gap: 30px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .thread {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 200px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .thread.searcher {
+            border-color: #64ffda;
+        }
+
+        .thread.inserter {
+            border-color: #f6ad55;
+        }
+
+        .thread h4 {
+            color: #fff;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .thread.searcher h4 { color: #64ffda; }
+        .thread.inserter h4 { color: #f6ad55; }
+
+        .thread-status {
+            font-size: 0.9rem;
+            color: #a0aec0;
+            margin-top: 10px;
+        }
+
+        .benefits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .benefit-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .benefit-card h4 {
+            color: #64ffda;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .benefit-card p {
+            color: #a0aec0;
+            font-size: 0.95rem;
+        }
+
+        .formula-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .formula-box .main-formula {
+            font-size: 1.3rem;
+            color: #fff;
+            font-family: 'Times New Roman', serif;
+            margin-bottom: 15px;
+        }
+
+        .formula-box .description {
+            color: #a0aec0;
+            font-size: 0.95rem;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .step {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #64ffda;
+            box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+        }
+
+        .step.completed {
+            background: #805ad5;
+        }
+
+        .trajectory-arrow {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .trajectory-arrow svg {
+            overflow: visible;
+        }
+
+        .trajectory-arrow path {
+            fill: none;
+            stroke: #64ffda;
+            stroke-width: 3;
+            stroke-dasharray: 8;
+            animation: dash 1s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -16; }
+        }
+
+        .trajectory-arrow.highlight path {
+            stroke: #ff6b6b;
+            stroke-width: 4;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #4a5568;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+        }
+
+        .language-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .language-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <button class="language-toggle" onclick="toggleLanguage()">🇰🇷 한국어 / English</button>
+
+    <div class="container">
+        <header>
+            <h1>B-link-Tree & High Key</h1>
+            <p class="subtitle">낙장성(Non-blocking) 트리 탐색을 위한 혁신적 구조</p>
+        </header>
+
+        <section class="intro">
+            <h2>🔑 핵심 개념 (Key Concepts)</h2>
+            <p data-ko="B-link-Tree는 B-Tree의 변형으로, <span class='high-key-highlight'>High Key</span>와 <span class='highlight'>오른쪽 형제 포인터(Right Sibling Pointer)</span>를 추가하여 동시성(Concurrency)을 극대화합니다."
+               data-en="B-link-Tree is a variant of B-Tree that maximizes concurrency by adding a <span class='high-key-highlight'>High Key</span> and <span class='highlight'>Right Sibling Pointer</span>.">
+                B-link-Tree는 B-Tree의 변형으로, <span class="high-key-highlight">High Key</span>와 <span class="highlight">오른쪽 형제 포인터(Right Sibling Pointer)</span>를 추가하여 동시성(Concurrency)을 극대화합니다.
+            </p>
+            <p data-ko="High Key는 각 노드의 상한 경계를 명시하여, 탐색 중에도 다른 연산이 계속될 수 있게 합니다."
+               data-en="The High Key explicitly specifies the upper bound of each node, allowing other operations to continue during search.">
+                High Key는 각 노드의 상한 경계를 명시하여, 탐색 중에도 다른 연산이 계속될 수 있게 합니다.
+            </p>
+        </section>
+
+        <div class="comparison">
+            <div class="panel b-tree">
+                <h3>
+                    <span class="panel-icon">🌳</span>
+                    <span data-ko="일반 B-Tree" data-en="Standard B-Tree">일반 B-Tree</span>
+                </h3>
+                <div class="node-structure">
+                    <div class="node-row">
+                        <span class="bracket">[</span>
+                        <span class="pointer">P₀</span>
+                        <span class="separator">|</span>
+                        <span class="key">K₁</span>
+                        <span class="separator">|</span>
+                        <span class="pointer">P₁</span>
+                        <span class="separator">|</span>
+                        <span class="key">K₂</span>
+                        <span class="separator">|</span>
+                        <span class="pointer">P₂</span>
+                        <span class="separator">|</span>
+                        <span class="key">...</span>
+                        <span class="separator">|</span>
+                        <span class="key">Kₙ</span>
+                        <span class="separator">|</span>
+                        <span class="pointer">Pₙ</span>
+                        <span class="bracket">]</span>
+                    </div>
+                </div>
+                <p data-ko="전통적인 B-Tree의 노드 구조입니다. n개의 키와 n+1개의 포인터를 가집니다."
+                   data-en="Traditional B-Tree node structure with n keys and n+1 pointers.">
+                    전통적인 B-Tree의 노드 구조입니다. n개의 키와 n+1개의 포인터를 가집니다.
+                </p>
+            </div>
+
+            <div class="panel blink-tree">
+                <h3>
+                    <span class="panel-icon">🔗</span>
+                    <span data-ko="B-link-Tree" data-en="B-link-Tree">B-link-Tree</span>
+                </h3>
+                <div class="node-structure">
+                    <div class="node-row">
+                        <span class="bracket">[</span>
+                        <span class="pointer">P₀</span>
+                        <span class="separator">|</span>
+                        <span class="key">K₁</span>
+                        <span class="separator">|</span>
+                        <span class="pointer">P₁</span>
+                        <span class="separator">|</span>
+                        <span class="key">...</span>
+                        <span class="separator">|</span>
+                        <span class="key">Kₙ</span>
+                        <span class="separator">|</span>
+                        <span class="pointer">Pₙ</span>
+                        <span class="separator">|</span>
+                        <span class="high-key">Kₙ₊₁ (High Key)</span>
+                        <span class="separator">|</span>
+                        <span class="right-pointer">Right Ptr</span>
+                        <span class="bracket">]</span>
+                    </div>
+                </div>
+                <p data-ko="B-link-Tree는 <span class='high-key-highlight'>High Key(Kₙ₊₁)</span>와 오른쪽 형제 포인터를 추가합니다."
+                   data-en="B-link-Tree adds a <span class='high-key-highlight'>High Key(Kₙ₊₁)</span> and right sibling pointer.">
+                    B-link-Tree는 <span class="high-key-highlight">High Key(Kₙ₊₁)</span>와 오른쪽 형제 포인터를 추가합니다.
+                </p>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box high-key"></div>
+                        <span>High Key (상한 경계)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box right-pointer"></div>
+                        <span>Right Pointer (형제 노드)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="interactive-section">
+            <h2 data-ko="🔍 High Key가 작동하는 방식" data-en="🔍 How High Key Works">🔍 High Key가 작동하는 방식</h2>
+
+            <div class="formula-box">
+                <div class="main-formula">
+                    High Key = K<sub>n+1</sub> = 해당 노드의 <strong>상한 경계 (Upper Bound)</strong>
+                </div>
+                <p class="description" data-ko="노드의 모든 키 K는 High Key보다 작아야 합니다: K < High Key"
+                   data-en="All keys K in the node must be less than High Key: K < High Key">
+                    노드의 모든 키 K는 High Key보다 작아야 합니다: K < High Key
+                </p>
+            </div>
+
+            <div class="search-demo">
+                <div class="controls">
+                    <div class="search-input-group">
+                        <label data-ko="탐색할 값:" data-en="Search value:">탐색할 값:</label>
+                        <input type="number" id="searchValue" value="75" min="0" max="150">
+                        <button class="btn" onclick="startSearch()" data-ko="탐색 시작" data-en="Start Search">탐색 시작</button>
+                        <button class="btn btn-secondary" onclick="resetSearch()" data-ko="초기화" data-en="Reset">초기화</button>
+                    </div>
+                </div>
+
+                <div class="step-indicator" id="stepIndicator">
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                    <div class="step"></div>
+                </div>
+
+                <div class="tree-visualization" id="treeViz">
+                    <!-- Root Level -->
+                    <div class="level">
+                        <div class="tree-node" id="root">
+                            <span class="slot pointer" title="P0">▼</span>
+                            <span class="slot key">50</span>
+                            <span class="slot pointer" title="P1">▼</span>
+                            <span class="slot key">100</span>
+                            <span class="slot pointer" title="P2">▼</span>
+                            <span class="slot high-key">∞</span>
+                            <span class="slot right-ptr" title="Right Sibling">→</span>
+                        </div>
+                    </div>
+
+                    <!-- Leaf Level -->
+                    <div class="level">
+                        <div class="tree-node" id="leaf1" data-min="0" data-max="50">
+                            <span class="slot key">10</span>
+                            <span class="slot key">20</span>
+                            <span class="slot key">30</span>
+                            <span class="slot key">40</span>
+                            <span class="slot high-key">50</span>
+                            <span class="slot right-ptr" data-target="leaf2">→</span>
+                        </div>
+                        <div class="tree-node" id="leaf2" data-min="50" data-max="100">
+                            <span class="slot key">60</span>
+                            <span class="slot key">70</span>
+                            <span class="slot key">80</span>
+                            <span class="slot key">90</span>
+                            <span class="slot high-key">100</span>
+                            <span class="slot right-ptr" data-target="leaf3">→</span>
+                        </div>
+                        <div class="tree-node" id="leaf3" data-min="100" data-max="999">
+                            <span class="slot key">110</span>
+                            <span class="slot key">120</span>
+                            <span class="slot key">130</span>
+                            <span class="slot key">140</span>
+                            <span class="slot high-key">∞</span>
+                            <span class="slot right-ptr">→</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="explanation" id="explanation">
+                    <h4 data-ko="알고리즘" data-en="Algorithm">알고리즘</h4>
+                    <p data-ko="탐색 값을 입력하고 '탐색 시작'을 클릭하세요. High Key를 활용한 탐색 과정을 시뮬레이션합니다."
+                       data-en="Enter a search value and click 'Start Search' to simulate the High Key search algorithm.">
+                        탐색 값을 입력하고 '탐색 시작'을 클릭하세요. High Key를 활용한 탐색 과정을 시뮬레이션합니다.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="interactive-section">
+            <h2 data-ko="🚀 Lock-Free 탐색의 비밀" data-en="🚀 The Secret of Lock-Free Traversal">🚀 Lock-Free 탐색의 비밀</h2>
+
+            <div class="lock-free-demo">
+                <h3 data-ko="High Key가 있을 때의 동시성" data-en="Concurrency with High Key">High Key가 있을 때의 동시성</h3>
+                <p data-ko="High Key를 사용하면 탐색(Search) 중에도 삽입(Insert) 작업이 블로킹되지 않습니다."
+                   data-en="With High Key, Insert operations don't block Search operations.">
+                    High Key를 사용하면 탐색(Search) 중에도 삽입(Insert) 작업이 블로킹되지 않습니다.
+                </p>
+
+                <div class="thread-visualization">
+                    <div class="thread searcher">
+                        <h4>🔍 Searcher Thread</h4>
+                        <div id="searcherStatus" data-ko="대기 중..." data-en="Waiting...">대기 중...</div>
+                        <div class="thread-status" id="searcherDetail"></div>
+                    </div>
+                    <div class="thread inserter">
+                        <h4>✏️ Inserter Thread</h4>
+                        <div id="inserterStatus" data-ko="대기 중..." data-en="Waiting...">대기 중...</div>
+                        <div class="thread-status" id="inserterDetail"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn" onclick="simulateConcurrency()" data-ko="동시성 시뮬레이션" data-en="Simulate Concurrency">동시성 시뮬레이션</button>
+                </div>
+
+                <div class="explanation">
+                    <h4 data-ko="핵심 원리" data-en="Key Principle">핵심 원리</h4>
+                    <p data-ko="탐색 값 > High Key면 오른쪽 형제로 이동! 이 단순한 규칙이 락 없이도 안전한 탐색을 가능하게 합니다."
+                       data-en="If search value > High Key, move to right sibling! This simple rule enables safe lock-free traversal.">
+                        <strong>탐색 값 > High Key면 오른쪽 형제로 이동!</strong> 이 단순한 규칙이 락 없이도 안전한 탐색을 가능하게 합니다.
+                    </p>
+                    <div class="formula">if (search_key ≥ node.high_key) goto node.right_sibling;</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="interactive-section">
+            <h2 data-ko="✨ B-link-Tree의 장점" data-en="✨ Benefits of B-link-Tree">✨ B-link-Tree의 장점</h2>
+
+            <div class="benefits">
+                <div class="benefit-card">
+                    <h4>🔓 <span data-ko="Lock-Free 읽기" data-en="Lock-Free Reads">Lock-Free 읽기</span></h4>
+                    <p data-ko="탐색 연산이 락을 획득하지 않아도 되어 동시성이 극대화됩니다."
+                       data-en="Search operations don't need locks, maximizing concurrency.">
+                        탐색 연산이 락을 획득하지 않아도 되어 동시성이 극대화됩니다.
+                    </p>
+                </div>
+                <div class="benefit-card">
+                    <h4>⚡ <span data-ko="빠른 탐색" data-en="Fast Search">빠른 탐색</span></h4>
+                    <p data-ko="락 대기 시간이 없어 읽기 집중 워크로드에서 뛰어난 성능을 보입니다."
+                       data-en="No lock wait time means excellent read-heavy workload performance.">
+                        락 대기 시간이 없어 읽기 집중 워크로드에서 뛰어난 성능을 보입니다.
+                    </p>
+                </div>
+                <div class="benefit-card">
+                    <h4>🔄 <span data-ko="구조 변경 중에도 탐색 가능" data-en="Search During Restructure">구조 변경 중에도 탐색 가능</span></h4>
+                    <p data-ko="노드 분할(Split) 중에도 탐색이 계속될 수 있습니다."
+                       data-en="Searches can continue even during node splits.">
+                        노드 분할(Split) 중에도 탐색이 계속될 수 있습니다.
+                    </p>
+                </div>
+                <div class="benefit-card">
+                    <h4>🌐 <span data-ko="데이터베이스에서 널리 사용" data-en="Widely Used in Databases">데이터베이스에서 널리 사용</span></h4>
+                    <p data-ko="PostgreSQL, MySQL(InnoDB) 등 주요 DBMS에서 B-link-Tree 변형을 사용합니다."
+                       data-en="Major DBMS like PostgreSQL and MySQL(InnoDB) use B-link-Tree variants.">
+                        PostgreSQL, MySQL(InnoDB) 등 주요 DBMS에서 B-link-Tree 변형을 사용합니다.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="interactive-section">
+            <h2 data-ko="📚 요약" data-en="📚 Summary">📚 요약</h2>
+
+            <div class="formula-box">
+                <div class="main-formula">
+                    B-link-Tree = B-Tree + High Key + Right Sibling Pointer
+                </div>
+                <p class="description" data-ko="High Key는 각 노드의 상한 경계를 명시하여 락 없이도 안전한 탐색을 가능하게 합니다."
+                   data-en="High Key specifies the upper bound of each node, enabling safe lock-free traversal.">
+                    High Key는 각 노드의 상한 경계를 명시하여 락 없이도 안전한 탐색을 가능하게 합니다.
+                </p>
+            </div>
+
+            <div class="explanation">
+                <h4 data-ko="핵심 알고리즘" data-en="Core Algorithm">핵심 알고리즘</h4>
+                <p data-ko="1. 현재 노드에서 탐색 값을 찾는다<br>2. 탐색 값 ≥ High Key라면 오른쪽 형제로 이동<br>3. 아니면 적절한 자식 포인터로 이동<br>4. 리프 노드에 도달할 때까지 반복"
+                   data-en="1. Search for the value in current node<br>2. If search value ≥ High Key, move to right sibling<br>3. Otherwise, follow appropriate child pointer<br>4. Repeat until reaching leaf node">
+                    1. 현재 노드에서 탐색 값을 찾는다<br>
+                    2. 탐색 값 ≥ High Key라면 오른쪽 형제로 이동<br>
+                    3. 아니면 적절한 자식 포인터로 이동<br>
+                    4. 리프 노드에 도달할 때까지 반복
+                </p>
+            </div>
+        </section>
+
+        <footer>
+            <p>B-link-Tree & High Key - 데이터베이스 낙장성 입문</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">B-link-Tree: A Technique for High-Performance Concurrent B-Tree (Lehman & Yao, 1981)</p>
+        </footer>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        let isSearching = false;
+        let isKorean = true;
+
+        function getText(element, koText, enText) {
+            return isKorean ? koText : enText;
+        }
+
+        function toggleLanguage() {
+            isKorean = !isKorean;
+            document.querySelectorAll('[data-ko][data-en]').forEach(el => {
+                el.innerHTML = isKorean ? el.dataset.ko : el.dataset.en;
+            });
+        }
+
+        function updateSteps(step) {
+            const steps = document.querySelectorAll('.step');
+            steps.forEach((s, i) => {
+                s.classList.remove('active', 'completed');
+                if (i < step) s.classList.add('completed');
+                if (i === step) s.classList.add('active');
+            });
+        }
+
+        function highlightNode(nodeId) {
+            document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active', 'highlighted'));
+            const node = document.getElementById(nodeId);
+            if (node) {
+                node.classList.add('active', 'highlighted');
+                setTimeout(() => node.classList.remove('highlighted'), 500);
+            }
+        }
+
+        function showExplanation(html) {
+            document.getElementById('explanation').innerHTML = html;
+        }
+
+        async function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function startSearch() {
+            if (isSearching) return;
+            isSearching = true;
+
+            const searchValue = parseInt(document.getElementById('searchValue').value);
+            const btn = document.querySelector('.btn');
+            btn.disabled = true;
+
+            // Reset
+            document.querySelectorAll('.tree-node').forEach(n => {
+                n.classList.remove('active', 'visited');
+            });
+            updateSteps(0);
+
+            // Step 1: Start at root
+            highlightNode('root');
+            showExplanation(`
+                <h4>${isKorean ? '1단계: 루트 노드 탐색' : 'Step 1: Search Root Node'}</h4>
+                <p>${isKorean ? `루트 노드에서 ${searchValue}을(를) 찾습니다.` : `Searching for ${searchValue} in root node.`}</p>
+                <div class="formula">${searchValue} < 50? → ${searchValue < 50 ? 'Left' : (searchValue < 100 ? 'Middle' : 'Right')}</div>
+            `);
+            await sleep(1500);
+
+            // Step 2: Navigate to appropriate leaf
+            updateSteps(1);
+            let targetLeaf;
+            if (searchValue < 50) {
+                targetLeaf = 'leaf1';
+            } else if (searchValue < 100) {
+                targetLeaf = 'leaf2';
+            } else {
+                targetLeaf = 'leaf3';
+            }
+
+            document.getElementById('root').classList.add('visited');
+            highlightNode(targetLeaf);
+            showExplanation(`
+                <h4>${isKorean ? '2단계: 리프 노드 탐색' : 'Step 2: Search Leaf Node'}</h4>
+                <p>${isKorean ? `리프 노드 <code>${targetLeaf}</code>에서 ${searchValue}을(를) 찾습니다.` : `Searching for ${searchValue} in leaf node <code>${targetLeaf}</code>.`}</p>
+            `);
+            await sleep(1500);
+
+            // Step 3: Check High Key
+            updateSteps(2);
+            const leaf = document.getElementById(targetLeaf);
+            const highKey = parseInt(leaf.querySelector('.high-key').textContent) || Infinity;
+
+            if (searchValue >= highKey && highKey !== Infinity) {
+                // Need to follow right pointer
+                showExplanation(`
+                    <h4>${isKorean ? '3단계: High Key 확인 → 오른Sibling 이동!' : 'Step 3: High Key Check → Move Right!'}</h4>
+                    <p><span class="high-key-highlight">${searchValue} ≥ ${highKey}</span> ${isKorean ? '(High Key)' : '(High Key)'}</p>
+                    <p>${isKorean ? '탐색 값이 High Key 이상이므로 오른쪽 형제 노드로 이동합니다!' : 'Search value >= High Key, moving to right sibling node!'}</p>
+                `);
+                await sleep(1500);
+
+                updateSteps(3);
+                const rightTarget = leaf.querySelector('.right-ptr').dataset.target;
+                leaf.classList.add('visited');
+                highlightNode(rightTarget);
+                showExplanation(`
+                    <h4>${isKorean ? '4단계: 오른쪽 형제에서 찾기' : 'Step 4: Search in Right Sibling'}</h4>
+                    <p>${isKorean ? '오른Sibling 노드에서 값을 찾습니다. 이렇게 하면 노드 분할 중에도 안전하게 탐색할 수 있습니다.' : 'Searching in sibling node. This ensures safe traversal even during node splits.'}</p>
+                `);
+            } else {
+                updateSteps(3);
+                showExplanation(`
+                    <h4>${isKorean ? '3단계: High Key 확인 → 현재 노드에서 계속' : 'Step 3: High Key Check → Continue in Current Node'}</h4>
+                    <p><span class="highlight">${searchValue} < ${highKey === Infinity ? '∞' : highKey}</span> ${isKorean ? '(High Key)' : '(High Key)'}</p>
+                    <p>${isKorean ? '탐색 값이 High Key보다 작으므로 현재 노드에서 계속 탐색합니다.' : 'Search value < High Key, continuing search in current node.'}</p>
+                `);
+            }
+
+            isSearching = false;
+            btn.disabled = false;
+        }
+
+        function resetSearch() {
+            isSearching = false;
+            document.querySelectorAll('.tree-node').forEach(n => {
+                n.classList.remove('active', 'visited', 'highlighted');
+            });
+            updateSteps(-1);
+            showExplanation(`
+                <h4>${isKorean ? '알고리즘' : 'Algorithm'}</h4>
+                <p>${isKorean ? '탐색 값을 입력하고 \'탐색 시작\'을 클릭하세요. High Key를 활용한 탐색 과정을 시뮬레이션합니다.' : 'Enter a search value and click \'Start Search\' to simulate the High Key search algorithm.'}</p>
+            `);
+            document.querySelector('.btn').disabled = false;
+        }
+
+        async function simulateConcurrency() {
+            const searcherStatus = document.getElementById('searcherStatus');
+            const searcherDetail = document.getElementById('searcherDetail');
+            const inserterStatus = document.getElementById('inserterStatus');
+            const inserterDetail = document.getElementById('inserterDetail');
+
+            // Reset
+            searcherStatus.textContent = isKorean ? '대기 중...' : 'Waiting...';
+            searcherDetail.textContent = '';
+            inserterStatus.textContent = isKorean ? '대기 중...' : 'Waiting...';
+            inserterDetail.textContent = '';
+
+            // Phase 1: Searcher starts
+            await sleep(500);
+            searcherStatus.textContent = isKorean ? 'leaf2에서 85 탐색 중...' : 'Searching for 85 in leaf2...';
+            searcherDetail.textContent = isKorean ? '읽기 락 없이 탐색 중' : 'Searching without read lock';
+
+            await sleep(1000);
+
+            // Phase 2: Inserter wants to split
+            inserterStatus.textContent = isKorean ? 'leaf2 분할 준비 중...' : 'Preparing to split leaf2...';
+            inserterDetail.textContent = isKorean ? 'High Key 설정 및 형제 포인터 연결' : 'Setting High Key & linking sibling pointer';
+
+            await sleep(1000);
+
+            // Phase 3: Split happens
+            inserterStatus.textContent = isKorean ? 'leaf2 분할 중...' : 'Splitting leaf2...';
+            searcherStatus.textContent = isKorean ? '여전히 85 탐색 중...' : 'Still searching for 85...';
+            searcherDetail.textContent = isKorean ? '탐색 차단 없음! 85 < High Key(100)' : 'No blocking! 85 < High Key(100)';
+
+            await sleep(1000);
+
+            // Phase 4: New node created
+            inserterStatus.textContent = isKorean ? '새 노드(leaf2\') 생성 완료' : 'New node (leaf2\') created';
+            inserterDetail.textContent = isKorean ? 'High Key(100) 설정, 새 키 95 삽입' : 'High Key(100) set, inserted new key 95';
+
+            await sleep(1000);
+
+            // Phase 5: Searcher completes
+            searcherStatus.textContent = isKorean ? '탐색 완료! 85 발견' : 'Search complete! Found 85';
+            searcherDetail.textContent = isKorean ? '락 대기 없이 성공적으로 탐색 완료' : 'Successfully completed without lock waits';
+
+            await sleep(500);
+            inserterStatus.textContent = isKorean ? '분할 완료!' : 'Split complete!';
+            inserterDetail.textContent = isKorean ? 'Searcher가 차단되지 않았습니다!' : 'Searcher was not blocked!';
+        }
+
+        // Initialize step indicators
+        updateSteps(-1);
+    </script>
+</body>
+</html>
